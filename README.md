@@ -81,19 +81,28 @@ For two cores, startup must give each core its own stack and initialize shared C
 
 The default team size is one. Set `DEFAULT_THREADS=2` when running **board setup** to change it. An explicit `num_threads(2)` requests two participants regardless of that default and requires a running worker. The worker loop runs indefinitely.
 
-## Compiler and supported constructs
+## Compiler
 
-The bundled tools are GCC 4.4.3 and GNU Binutils 2.20.1. The build preprocesses with the GCC driver, then invokes `cc1 -fopenmp` directly because the legacy driver adds an unsupported `-pthread` option. Preprocessing defines `_OPENMP=200805` to match this GCC version. Runtime coverage is limited to the constructs below.
+The bundled tools are GCC 4.4.3 and GNU Binutils 2.20.1. The build preprocesses with the GCC driver, then invokes `cc1 -fopenmp` directly because the legacy driver adds an unsupported `-pthread` option. Preprocessing defines `_OPENMP=200805` to match this GCC version.
 
-| Component | Coverage |
-| --- | --- |
-| `Openmp/omp.h` | `omp_get_thread_num()` and `omp_get_num_threads()` |
-| `Openmp/parallel_runtime.c` and `.h` | Parallel region start/join, reusable barrier, atomic updates via one shared lock, and unnamed critical regions |
-| GCC-generated code exercised in tests | Static vector-add loops and integer addition reductions, alongside repeated parallel regions and synchronization |
-
-Tasks, nested parallelism, named critical regions, dynamic scheduling, and `threadprivate` are outside the validated feature set. Programs that require a C library or compiler support routines must supply the required libraries at link time.
+Programs that require a C library or compiler support routines must supply the required libraries at link time.
 
 For inspection, `.i`, `.s`, and `.o` show the application’s preprocessed source, assembly, and object code. Use `.objdump` to see the linked startup, application, and runtime together. An optional second argument selects an output prefix, for example `bash omp_compile_c.sh counter.c build/counter`.
+
+## OpenMP pragmas and clauses available today
+
+Use these directives in C files compiled with `omp_compile_c.sh`. The examples describe the subset exercised with the bundled GCC 4.4.3 toolchain.
+
+| Directive or clause | Example | Current coverage |
+| --- | --- | --- |
+| Parallel region | `#pragma omp parallel num_threads(1)` | Runs a structured block with the requested team. Repeated one-thread regions passed on SPARC. A two-thread request requires core 1 to be running the worker loop. |
+| Static work-sharing loop | `#pragma omp parallel for schedule(static)` | GCC generates the iteration bounds for each thread. The single-core vector-add test checked the output elements and the guards at both ends of the array. |
+| Integer addition reduction | `#pragma omp parallel for schedule(static) reduction(+:sum)` | Each participant accumulates a private sum and combines it into the shared result. Integer addition has single-core target coverage. |
+| Atomic update | `#pragma omp atomic` followed by `count++;` | Protects an increment through the runtime’s shared atomic lock. Other atomic forms need their own coverage. |
+| Unnamed critical region | `#pragma omp critical` followed by a block | Serializes entry using the runtime’s critical-region lock. The single-core test exercised entry and exit. |
+| Explicit barrier | `#pragma omp barrier` inside a parallel region | GCC emits `GOMP_barrier`. The directive compiles and links for SPARC. Repeated two-participant barriers have been exercised on the host. |
+
+A one-thread target run checks the generated instructions and result. Demonstrating that two SPARC cores divide iterations, wait for each other, or exclude each other from a critical region requires a two-core run.
 
 ## Validation
 
@@ -103,9 +112,13 @@ For inspection, `.i`, `.s`, and `.o` show the application’s preprocessed sourc
 | Host runtime test | A separate host adapter exercised the runtime interfaces directly over 2,000 alternating one- and two-thread regions, including barriers and lock-protected updates. This checks runtime logic on the host. |
 | Latest BSP build scripts | Generated a single-core SPARC ELF and hex image with the bundled compiler. A multicore ELF also linked using the multicore startup and an interrupt handler from a BSP archive. |
 
-Two-core target validation remains open for distinct core IDs, worker dispatch, loop partitioning, repeated barriers, contended updates, and visibility through the target caches.
+## Roadmap
 
-## Attribution and licensing
+1. **Validate the existing subset on two SPARC cores.** Confirm distinct core IDs and worker dispatch. Run a static loop with an odd iteration count and check that every iteration executes exactly once. Exercise repeated barriers, contended atomic and critical updates, reductions, and visibility through both cores’ caches.
+2. **Candidate additions after dual-core validation:** named critical regions (separate locks for distinct names) and dynamic loop scheduling (threads request another chunk as they finish). Each addition needs a compiler-generated example and a multicore correctness test before it moves into the supported table.
+
+Tasks, nested parallelism, and `threadprivate` are outside the current scope. Future features listed here are proposals.
+
+## Attribution
 
 Developed by Sharon Shibu as part of the SPARC V8 bare-metal parallel-execution project. The runtime uses GCC’s existing OpenMP lowering and GNU runtime interfaces.
-
