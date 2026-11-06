@@ -44,14 +44,6 @@ bash omp_compile_c.sh counter.c
 
 The script writes `counter.hex`, `counter.s`, `counter.i` `counter.elf` and `counter.objdump`.
 
-```bash
-printf 'REG o0 0x1 0xffffffff\n' > counter.expected
-"$HOME/project/SparcV8_core/model/system_models/core_only/sitar_model/executable/sparc_sim_sitar_core_only" \
-    counter.hex counter.expected --stats
-```
-
-The expected result is `PASS: o0 = 0x1`. Here `1` is the result of the comparison in `board_terminate(count == 1u)`. Programs that return from `main()` instead follow their BSP’s startup return path.
-
 ## Board setup
 
 The folder passed to `build.sh` describes one target configuration. Keep it accessible after setup because application builds use its headers, libraries, and optional converter.
