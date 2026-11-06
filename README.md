@@ -19,7 +19,7 @@ The field means **ASR29, high bit 15, low bit 8**, inclusive. Setup assembles th
 Save this single-core example as `counter.c`:
 
 ```c
-#include "parallel_runtime.h"
+#include <omp.h>
 
 static unsigned int count;
 
@@ -45,6 +45,18 @@ bash omp_compile_c.sh counter.c
 ```
 
 The script writes `counter.elf` and `counter.objdump` beside the source. Load the ELF with your board’s usual programming or debugging tools. The example returns zero when the counter equals one. Your BSP startup determines what happens after `main()` returns. If the BSP provides a memory-image converter, the script also generates `counter.hex`.
+
+## Application header
+
+Use `#include <omp.h>` in application code. The SDK compile script selects the board adapter and supplies the include path.
+
+| Functions available through `omp.h` | Purpose |
+| --- | --- |
+| `omp_get_thread_num()`, `omp_get_num_threads()` | OpenMP thread index and team size |
+| `parallel_runtime_init()`, `parallel_worker_loop()` | SDK startup and worker entry |
+| `platform_core_id()`, `board_terminate(status)` | SDK board identification and explicit termination |
+
+GCC recognizes OpenMP pragmas through the compile flags. Including the header makes the function declarations available. Core 0 must still initialize the runtime once before its first parallel region, either in startup code or in the application.
 
 ## Board setup
 
