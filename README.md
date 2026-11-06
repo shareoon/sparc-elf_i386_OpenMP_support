@@ -32,16 +32,9 @@ source path with your own. The model files and cross-compiler are supplied
 externally.
 
 ```bash
-MODEL_COMPILER=/actual/path/to/SparcV8_core/compiler
 bash build.sh \
-  --startup "$MODEL_COMPILER/crt0.s" \
-  --linker "$MODEL_COMPILER/sparc.ld" \
-  --platform platforms/sparcv8_asr29_tso.h \
-  --stubs "$MODEL_COMPILER/freestanding_stubs.c" \
-  --include "$MODEL_COMPILER/include" \
-  --hex-converter "$MODEL_COMPILER/hexdump_to_memimage.py" \
-  --toolchain-bin "$HOME/toolchains/sparc-elf-gcc443/bin" \
-  -o build/omp_atomic_portable /actual/path/to/omp_atomic_test.c
+/actual/path/to/SparcV8_core/compiler \
+/actual/path/to/omp_atomic_test.c
 ```
 
 For another compatible target, select its startup, linker script, and adapter.
