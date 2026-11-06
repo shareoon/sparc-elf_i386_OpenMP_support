@@ -8,10 +8,9 @@ Build freestanding C programs that use selected OpenMP constructs on SPARC V8. T
 
 Run these commands from the repository root on a compatible **x86-64 Linux host** with Bash. The supplied binaries target bare-metal SPARC V8. Python 3 is needed for the optional SITAR memory-image conversion.
 
-Configure your board once. For the SITAR model, point to its existing `compiler/` directory:
 
 ```bash
-bash build.sh "$HOME/project/SparcV8_core/compiler" --core-id=asr29:15:8
+bash build.sh actual/path/to/BSP/startup/files --core-id=asr29:15:8 (if you core ID is saved in ASR29 8-115 bits)
 ```
 
 The field means **ASR29, high bit 15, low bit 8**, inclusive. Setup assembles the startup, builds the runtime and optional stubs, and selects the resulting profile under `.boards/`. The scripts use the compiler in this repository’s `bin/` directory. If an extracted archive lost its executable permissions, run `chmod +x bin/sparc-elf-* libexec/gcc/sparc-elf/4.4.3/cc1`.
