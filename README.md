@@ -97,4 +97,3 @@ Two-core target validation remains open for distinct core IDs, worker dispatch, 
 
 Developed by Sharon Shibu as part of the SPARC V8 bare-metal parallel-execution project. The runtime uses GCC’s existing OpenMP lowering and GNU runtime interfaces.
 
-A license for the project’s own code is pending. The bundled GNU tools and any separately supplied BSP components retain their respective licenses.
