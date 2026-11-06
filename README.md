@@ -6,8 +6,6 @@ Build freestanding C programs that use selected OpenMP constructs on SPARC V8. T
 
 ## Quick start
 
-Run these commands from the repository root on a compatible **x86-64 Linux host** with Bash. The supplied binaries target bare-metal SPARC V8. Python 3 is needed for the optional SITAR memory-image conversion.
-
 
 ```bash
 bash build.sh actual/path/to/BSP/startup/files --core-id=asr29:15:8 (if you core ID is saved in ASR29 8-115 bits)
