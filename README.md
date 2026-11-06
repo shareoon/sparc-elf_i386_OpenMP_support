@@ -42,7 +42,7 @@ Compile it with the active board profile:
 bash omp_compile_c.sh counter.c
 ```
 
-The script writes `counter.elf` and `counter.objdump` beside the source. With the SITAR converter present, it also writes `counter.hex`. To check this example in SITAR, create `counter.expected` and pass both files to the built simulator:
+The script writes `counter.hex`, `counter.s`, `counter.i` `counter.elf` and `counter.objdump`.
 
 ```bash
 printf 'REG o0 0x1 0xffffffff\n' > counter.expected
