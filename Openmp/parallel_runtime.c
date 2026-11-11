@@ -12,7 +12,9 @@
 enum mailbox_state {
     IDLE = 0,
     READY = 1,
-    DONE = 2
+    DONE = 2,
+    STOP = 3,
+    STOPPED = 4
 };
 
 struct work_mailbox {
@@ -23,16 +25,16 @@ struct work_mailbox {
 
 static struct work_mailbox mailbox;
 
-/* Core 0 writes; workers read during published jobs. */
+// Core 0 writes; workers read during published jobs. 
 static unsigned int active_team_size;
 
-/* Accessed only by core 0. */
+// Accessed only by core 0. 
 static unsigned int region_active;
 
-/* Each core accesses only its own sense element. */
+// Each core accesses only its own sense element. 
 static unsigned int barrier_sense[2];
 
-/* Core 1 publishes arrival; core 0 publishes release. */
+// Core 1 publishes arrival; core 0 publishes release. 
 static unsigned int barrier_arrived;
 static unsigned int barrier_released;
 
@@ -51,7 +53,7 @@ static void runtime_fail(unsigned int error)
 
     platform_runtime_fail(error);
 
-    /* Defensive fallback if a platform hook unexpectedly returns. */
+    // Defensive fallback if a platform hook unexpectedly returns. 
     for (;;) {}
 }
 
@@ -84,7 +86,7 @@ void GOMP_parallel_start(parallel_function function,
 {
     unsigned int team_size;
 
-    /* Reject calls from workers before touching coordinator state. */
+    // Reject calls from workers before touching coordinator state. 
     if (platform_core_id() != 0)
         runtime_fail(PARALLEL_BAD_CORE);
 
@@ -137,12 +139,19 @@ void parallel_worker_loop(void)
 {
     parallel_function function;
     void *argument;
+    unsigned int state;
 
     if (platform_core_id() != 1)
         runtime_fail(PARALLEL_BAD_CORE);
 
     for (;;) {
-        while (state_load_acquire(&mailbox.state) != READY) {
+        do {
+            state = state_load_acquire(&mailbox.state);
+        } while (state != READY && state != STOP);
+
+        if (state == STOP) {
+            state_store_release(&mailbox.state, STOPPED);
+            return;
         }
 
         function = mailbox.function;
@@ -184,11 +193,11 @@ void GOMP_barrier(void)
     barrier_sense[id] = sense;
 
     if (id == 0) {
-        /* Core 0 has arrived; wait for core 1. */
+        // Core 0 has arrived; wait for core 1. 
         while (state_load_acquire(&barrier_arrived) != sense) {
         }
 
-        /* Both have arrived: release core 1. */
+        // Both have arrived: release core 1. 
         state_store_release(&barrier_released, sense);
     } else {
         state_store_release(&barrier_arrived, sense);
@@ -198,7 +207,24 @@ void GOMP_barrier(void)
     }
 }
 
-/* Atomic/reduction */
+void parallel_runtime_shutdown(void)
+{
+    if (platform_core_id() != 0)
+        runtime_fail(PARALLEL_BAD_CORE);
+
+    if (region_active)
+        runtime_fail(PARALLEL_BAD_STATE);
+
+    if (state_load_acquire(&mailbox.state) != IDLE)
+        runtime_fail(PARALLEL_BAD_STATE);
+
+    state_store_release(&mailbox.state, STOP);
+
+    while (state_load_acquire(&mailbox.state) != STOPPED) {
+    }
+}
+
+// Atomic/reduction 
 void GOMP_atomic_start(void)
 {
     platform_lock_acquire(&atomic_lock);
@@ -209,7 +235,7 @@ void GOMP_atomic_end(void)
     platform_lock_release(&atomic_lock);
 }
 
-/* Critical */
+// Critical 
 void GOMP_critical_start(void)
 {
     platform_lock_acquire(&critical_lock);

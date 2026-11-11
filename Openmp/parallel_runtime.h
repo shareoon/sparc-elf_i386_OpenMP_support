@@ -11,16 +11,26 @@ enum parallel_error {
     PARALLEL_BAD_FUNCTION
 };
 
-/* Core 0 calls once, before workers are released. */
+// Core 0 calls once, before workers are released.
 void parallel_runtime_init(void);
 
-/* Core 1 enters after shared initialization completes. */
-void parallel_worker_loop(void) __attribute__((noreturn));
+/* 
+   Core 1 enters after shared initialization completes.
+   Returns after acknowledging shutdown.
+ */
+void parallel_worker_loop(void);
 
-/* Diagnostic value to inspect after an unexpected halt. */
+/* 
+   Core 0 calls outside any parallel region.
+   Requires core 1 to be running parallel_worker_loop().
+   Runtime cannot be reused after shutdown.
+ */
+void parallel_runtime_shutdown(void);
+
+// Diagnostic value to inspect after an unexpected halt. 
 extern volatile unsigned int parallel_runtime_error;
 
-/* ABI entry points called by GCC-generated code. */
+// ABI entry points called by GCC-generated code. 
 void GOMP_parallel_start(parallel_function function,
                          void *argument,
                          unsigned int num_threads);

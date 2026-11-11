@@ -15,7 +15,7 @@ static inline unsigned int platform_core_id(void)
     return (value >> BOARD_ID_SHIFT) & BOARD_ID_MASK;
 }
 
-/* Requires TSO, coherent shared RAM and aligned 32-bit accesses. */
+// Requires TSO, coherent shared RAM and aligned 32-bit accesses. 
 static inline unsigned int
 state_load_acquire(const unsigned int *address)
 {
@@ -62,7 +62,7 @@ static inline void
 platform_lock_acquire(unsigned char *lock)
 {
     while (!platform_lock_try(lock)) {
-        /* Retry until this core acquires the lock. */
+        // Retry until this core acquires the lock. 
     }
 }
 
@@ -79,7 +79,7 @@ platform_lock_release(unsigned char *lock)
 
 static inline void platform_runtime_fail(unsigned int error)
 {
-    /* runtime_fail has already recorded the diagnostic. */
+    // Runtime_fail has already recorded the diagnostic. 
     (void)error;
     board_terminate(0);
 }
